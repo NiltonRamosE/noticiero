@@ -1,10 +1,10 @@
 <?php
 $internacional = [
-    "titulo" => "Cumbre climática global establece nuevos objetivos para 2030",
+    "titulo" => "Cumbre de paz logra acuerdo histórico entre naciones en conflicto",
     "autor" => "Ana López",
-    "resumen" => "Líderes mundiales se reúnen para establecer metas ambiciosas en la reducción de emisiones y transición hacia energías renovables.",
-    "fecha" => "14 de Noviembre, 2023",
-    "imagen" => "internacional.jpg",
+    "resumen" => "Tras décadas de tensiones, los líderes mundiales firman un tratado que establece zonas desmilitarizadas y cooperación económica mutua.",
+    "fecha" => "9 de Noviembre, 2023",
+    "imagen" => "internacional-paz.jpg",
     "categoria" => "Internacional"
 ];
 ?>

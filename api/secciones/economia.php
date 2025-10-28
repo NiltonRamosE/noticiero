@@ -1,11 +1,10 @@
 <?php
-/*****
-SUSTITUYE LAS XXX POR UN VALOR DE UNA NOTICIA DE INTERES EN ESTA CATEGORIA
-*****/
-
 $economia = [
-"titulo" => "XXX",
-"autor" => "XXX",
-"resumen" => "XXX",
+    "titulo" => "Inflación se reduce al 3.2%, la más baja en dos años",
+    "autor" => "Carlos Finanzas",
+    "resumen" => "El índice de precios al consumidor muestra una desaceleración significativa, impulsando optimismo en los mercados financieros internacionales.",
+    "fecha" => "14 de Noviembre, 2023",
+    "imagen" => "economia-inflacion.jpg",
+    "categoria" => "Economía"
 ];
 ?>

@@ -1,11 +1,10 @@
 <?php
-/*****
-SUSTITUYE LAS XXX POR UN VALOR DE UNA NOTICIA DE INTERES EN ESTA CATEGORIA
-*****/
-
 $television = [
-"titulo" => "XXX",
-"autor" => "XXX",
-"resumen" => "XXX",
+    "titulo" => "Series nacionales dominan los ratings internacionales",
+    "autor" => "Carmen Vidal",
+    "resumen" => "Producciones locales son adquiridas por plataformas globales, demostrando el auge del talento cinematográfico nacional en el extranjero.",
+    "fecha" => "1 de Noviembre, 2023",
+    "imagen" => "television-series.jpg",
+    "categoria" => "Televisión"
 ];
 ?>
