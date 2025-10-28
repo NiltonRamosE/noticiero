@@ -68,6 +68,12 @@
             opacity: 1;
             position: relative;
         }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -98,7 +104,9 @@
     <!-- Hero Section with Carousel -->
     <section class="bg-gradient-to-r from-primary-600 to-blue-700 text-white py-12 relative overflow-hidden">
         <div class="container mx-auto px-4 relative">
-            <?php include("secciones/portada.php"); ?>
+            <?php 
+            include("secciones/portada.php");
+            ?>
             
             <div id="heroCarousel" class="relative">
                 <?php foreach($portada as $index => $noticia): ?>
@@ -151,7 +159,7 @@
                 </div>
                 
                 <!-- Loading State -->
-                <div id="loadingState" class="flex justify-center items-center py-12">
+                <div id="loadingState" class="flex justify-center items-center py-12 hidden">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
                 </div>
             </div>
@@ -221,8 +229,6 @@
         // Variables globales
         let allNews = [];
         let currentCategory = 'todas';
-        let currentSlide = 0;
-        let slideInterval;
 
         // Función para obtener el color de la categoría
         function getCategoryColor(category) {
@@ -249,46 +255,6 @@
             return colors[category] || 'bg-gray-100 text-gray-800';
         }
 
-        // Función para cargar todas las noticias
-        async function loadAllNews() {
-            const sections = [
-                'ciencia', 'contenedores', 'cultura', 'deportes', 'economica', 
-                'empleo', 'formacion', 'gente', 'git', 'nacional', 
-                'openshift', 'openstack', 'opinion', 'sociedad', 'tecnologia', 
-                'television', 'video', 'internacional'
-            ];
-
-            for (const section of sections) {
-                try {
-                    const response = await fetch(`secciones/${section}.php`);
-                    if (response.ok) {
-                        const content = await response.text();
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = content;
-                        const script = tempDiv.querySelector('script');
-                        if (script) {
-                            eval(script.innerHTML);
-                            if (window[section]) {
-                                allNews = allNews.concat(window[section].map(news => ({
-                                    ...news,
-                                    section: section
-                                })));
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error loading ${section}:`, error);
-                }
-            }
-            
-            // Ordenar noticias por fecha (más recientes primero)
-            allNews.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-            
-            // Mostrar noticias
-            displayNews();
-            displayRecentNews();
-        }
-
         // Función para mostrar noticias según la categoría seleccionada
         function displayNews() {
             const container = document.getElementById('newsContainer');
@@ -304,20 +270,28 @@
             }
             
             // Generar HTML para las noticias
-            container.innerHTML = filteredNews.map(news => `
-                <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                    <img src="${news.imagen}" alt="${news.titulo}" class="w-full h-48 object-cover">
-                    <div class="p-6">
-                        <span class="category-badge ${getCategoryColor(news.section)} mb-3">${news.categoria}</span>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2">${news.titulo}</h3>
-                        <p class="text-gray-600 mb-4">${news.resumen}</p>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-500">${news.autor}</span>
-                            <span class="text-sm text-gray-500">${news.fecha}</span>
+            if (filteredNews.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <p class="text-gray-500 text-lg">No hay noticias disponibles para esta categoría.</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = filteredNews.map(news => `
+                    <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
+                        <img src="${news.imagen}" alt="${news.titulo}" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <span class="category-badge ${getCategoryColor(news.section)} mb-3">${news.categoria}</span>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">${news.titulo}</h3>
+                            <p class="text-gray-600 mb-4">${news.resumen}</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500">${news.autor}</span>
+                                <span class="text-sm text-gray-500">${news.fecha}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
         }
 
         // Función para mostrar noticias recientes en el sidebar
@@ -325,17 +299,21 @@
             const recentContainer = document.getElementById('recentNews');
             const recentNews = allNews.slice(0, 5); // Mostrar las 5 más recientes
             
-            recentContainer.innerHTML = recentNews.map(news => `
-                <div class="border-b border-gray-200 pb-4 last:border-0 last:pb-0">
-                    <span class="category-badge ${getCategoryColor(news.section)} text-xs mb-1">${news.categoria}</span>
-                    <h4 class="font-semibold text-gray-800 text-sm mb-1">${news.titulo}</h4>
-                    <p class="text-xs text-gray-600 mb-2 line-clamp-2">${news.resumen}</p>
-                    <div class="flex justify-between text-xs text-gray-500">
-                        <span>${news.autor}</span>
-                        <span>${news.fecha}</span>
+            if (recentNews.length === 0) {
+                recentContainer.innerHTML = '<p class="text-gray-500">No hay noticias recientes.</p>';
+            } else {
+                recentContainer.innerHTML = recentNews.map(news => `
+                    <div class="border-b border-gray-200 pb-4 last:border-0 last:pb-0">
+                        <span class="category-badge ${getCategoryColor(news.section)} text-xs mb-1">${news.categoria}</span>
+                        <h4 class="font-semibold text-gray-800 text-sm mb-1">${news.titulo}</h4>
+                        <p class="text-xs text-gray-600 mb-2 line-clamp-2">${news.resumen}</p>
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>${news.autor}</span>
+                            <span>${news.fecha}</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
         }
 
         // Función para cambiar de categoría
@@ -364,6 +342,7 @@
         function startCarousel() {
             const slides = document.querySelectorAll('.hero-slide');
             const indicators = document.querySelectorAll('.hero-indicator');
+            let currentSlide = 0;
             
             function showSlide(index) {
                 slides.forEach(slide => slide.classList.remove('active'));
@@ -380,14 +359,15 @@
             }
             
             // Configurar intervalo para cambio automático
-            slideInterval = setInterval(nextSlide, 5000);
+            const slideInterval = setInterval(nextSlide, 5000);
             
             // Configurar eventos para los indicadores
             indicators.forEach((indicator, index) => {
                 indicator.addEventListener('click', () => {
                     clearInterval(slideInterval);
                     showSlide(index);
-                    slideInterval = setInterval(nextSlide, 5000);
+                    // Reiniciar el intervalo
+                    setInterval(nextSlide, 5000);
                 });
             });
         }
@@ -412,9 +392,6 @@
 
         // Inicialización cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', function() {
-            // Cargar todas las noticias
-            loadAllNews();
-            
             // Iniciar carousel
             startCarousel();
             
@@ -424,7 +401,50 @@
                     changeCategory(btn.dataset.category);
                 });
             });
+            
+            // Mostrar categoría "Todas" por defecto
+            changeCategory('todas');
         });
+    </script>
+
+    <!-- Incluir todos los archivos PHP aquí para cargar los datos -->
+    <?php
+    // Incluir todos los archivos de secciones
+    $secciones = [
+        'ciencia', 'contenedores', 'cultura', 'deportes', 'economica', 
+        'empleo', 'formacion', 'gente', 'git', 'nacional', 
+        'openshift', 'openstack', 'opinion', 'sociedad', 'tecnologia', 
+        'television', 'video', 'internacional'
+    ];
+
+    // Combinar todas las noticias en un array
+    $allNews = [];
+    
+    foreach ($secciones as $seccion) {
+        if (file_exists("secciones/{$seccion}.php")) {
+            include("secciones/{$seccion}.php");
+            if (isset($$seccion) && is_array($$seccion)) {
+                foreach ($$seccion as $noticia) {
+                    $noticia['section'] = $seccion;
+                    $allNews[] = $noticia;
+                }
+            }
+        }
+    }
+
+    // Ordenar noticias por fecha (más recientes primero)
+    usort($allNews, function($a, $b) {
+        return strtotime($b['fecha']) - strtotime($a['fecha']);
+    });
+    ?>
+
+    <script>
+        // Pasar los datos PHP a JavaScript
+        allNews = <?php echo json_encode($allNews); ?>;
+        
+        // Mostrar noticias iniciales
+        displayNews();
+        displayRecentNews();
     </script>
 </body>
 </html>
