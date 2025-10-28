@@ -52,11 +52,61 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+        .hero-slide {
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+        .hero-slide.active {
+            opacity: 1;
+            position: relative;
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
+    <?php
+    // CARGAR TODOS LOS ARCHIVOS PRIMERO
+    $secciones = [
+        'portada', 'ciencia', 'contenedores', 'cultura', 'deportes', 'economica', 
+        'empleo', 'formacion', 'gente', 'git', 'nacional', 'internacional',
+        'openshift', 'openstack', 'opinion', 'sociedad', 'tecnologia', 
+        'television', 'video'
+    ];
+
+    $todasLasNoticias = [];
+
+    foreach ($secciones as $seccion) {
+        $filePath = "secciones/{$seccion}.php";
+        if (file_exists($filePath)) {
+            include($filePath);
+            // La variable se llama igual que el archivo (ej: $portada, $ciencia, etc.)
+            $variableName = $seccion;
+            if (isset($$variableName) && is_array($$variableName)) {
+                foreach ($$variableName as $noticia) {
+                    $noticia['section'] = $seccion;
+                    $todasLasNoticias[] = $noticia;
+                }
+            }
+        }
+    }
+
+    // Ordenar por fecha (más reciente primero)
+    usort($todasLasNoticias, function($a, $b) {
+        return strtotime($b['fecha']) - strtotime($a['fecha']);
+    });
+    ?>
+
     <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-10">
+    <header class="bg-white shadow-sm sticky top-0 z-20">
         <div class="container mx-auto px-4 py-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="mb-4 md:mb-0">
@@ -79,296 +129,117 @@
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="bg-gradient-to-r from-primary-600 to-blue-700 text-white py-12">
-        <div class="container mx-auto px-4">
-            <?php include("secciones/portada.php"); ?>
-            <div class="max-w-3xl">
-                <h1 class="text-3xl md:text-5xl font-bold mb-4"><?php echo $portada["titulo"]; ?></h1>
-                <p class="text-lg md:text-xl mb-6 opacity-90"><?php echo $portada["resumen"]; ?></p>
-                <div class="flex items-center text-sm">
-                    <span class="bg-white text-primary-600 px-3 py-1 rounded-full font-semibold">Noticia Destacada</span>
-                    <span class="ml-4"><?php echo $portada["fecha"] ?? "Hoy"; ?></span>
+    <!-- Hero Section with Carousel -->
+    <section class="bg-gradient-to-r from-primary-600 to-blue-700 text-white py-12 relative overflow-hidden">
+        <div class="container mx-auto px-4 relative">
+            <div id="heroCarousel" class="relative">
+                <?php 
+                // Mostrar carrusel solo si hay noticias de portada
+                if (isset($portada) && is_array($portada)): 
+                    foreach($portada as $index => $noticia): 
+                ?>
+                <div class="hero-slide <?php echo $index === 0 ? 'active' : ''; ?>" id="slide-<?php echo $index; ?>">
+                    <div class="max-w-3xl">
+                        <h1 class="text-3xl md:text-5xl font-bold mb-4"><?php echo htmlspecialchars($noticia["titulo"]); ?></h1>
+                        <p class="text-lg md:text-xl mb-6 opacity-90"><?php echo htmlspecialchars($noticia["resumen"]); ?></p>
+                        <div class="flex items-center text-sm flex-wrap gap-2">
+                            <span class="bg-white text-primary-600 px-3 py-1 rounded-full font-semibold">Noticia Destacada</span>
+                            <span><?php echo htmlspecialchars($noticia["fecha"] ?? "Hoy"); ?></span>
+                            <span>Por: <?php echo htmlspecialchars($noticia["autor"]); ?></span>
+                        </div>
+                    </div>
                 </div>
+                <?php endforeach; ?>
+                <?php else: ?>
+                <div class="hero-slide active">
+                    <div class="max-w-3xl">
+                        <h1 class="text-3xl md:text-5xl font-bold mb-4">Bienvenido al Portal de Noticias</h1>
+                        <p class="text-lg md:text-xl mb-6 opacity-90">Las noticias más relevantes e interesantes en un solo lugar.</p>
+                        <div class="flex items-center text-sm">
+                            <span class="bg-white text-primary-600 px-3 py-1 rounded-full font-semibold">Actualizado Diariamente</span>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+            
+            <?php if (isset($portada) && is_array($portada) && count($portada) > 1): ?>
+            <div class="flex justify-center mt-6 space-x-2">
+                <?php foreach($portada as $index => $noticia): ?>
+                <button class="hero-indicator w-3 h-3 rounded-full bg-white opacity-50 transition-opacity <?php echo $index === 0 ? 'opacity-100' : ''; ?>" data-slide="<?php echo $index; ?>"></button>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+    </section>
+
+    <!-- Category Navigation -->
+    <section class="bg-white shadow-sm sticky top-16 z-10">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex overflow-x-auto space-x-2 pb-2">
+                <button class="category-btn px-4 py-2 rounded-full bg-primary-500 text-white font-medium whitespace-nowrap" data-category="todas">Todas</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="ciencia">Ciencia</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="tecnologia">Tecnología</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="internacional">Internacional</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="nacional">Nacional</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="economica">Economía</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="deportes">Deportes</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="cultura">Cultura</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="opinion">Opinión</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="gente">Gente</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="formacion">Formación</button>
+                <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium whitespace-nowrap" data-category="empleo">Empleo</button>
             </div>
         </div>
     </section>
 
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
-        <!-- Fila 1 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <?php include("secciones/internacional.php"); ?>
-            <?php include("secciones/nacional.php"); ?>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-blue-100 text-blue-800 mb-3">Internacional</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $internacional["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $internacional["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $internacional["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $internacional["fecha"] ?? "Hoy"; ?></span>
-                    </div>
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Main Content Area -->
+            <div class="lg:w-3/4">
+                <div id="newsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Las noticias se cargarán dinámicamente aquí -->
                 </div>
-            </div>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-green-100 text-green-800 mb-3">Nacional</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $nacional["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $nacional["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $nacional["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $nacional["fecha"] ?? "Hoy"; ?></span>
-                    </div>
+                
+                <!-- Loading State -->
+                <div id="loadingState" class="flex justify-center items-center py-12 hidden">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+                    <span class="ml-3 text-gray-600">Cargando noticias...</span>
                 </div>
-            </div>
-        </div>
-        <!-- Fin Fila 1 -->
 
-        <!-- Fila 2 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <?php include("secciones/economia.php"); ?>
-            <?php include("secciones/opinion.php"); ?>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-gray-100 text-gray-800 mb-3">Economía</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $economia["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $economia["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $economia["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $economia["fecha"] ?? "Hoy"; ?></span>
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden text-center py-12">
+                    <div class="text-gray-400 mb-4">
+                        <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                     </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No hay noticias disponibles</h3>
+                    <p class="text-gray-500">No se encontraron noticias para esta categoría.</p>
                 </div>
             </div>
             
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-yellow-100 text-yellow-800 mb-3">Opinión</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $opinion["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $opinion["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $opinion["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $opinion["fecha"] ?? "Hoy"; ?></span>
+            <!-- Sidebar -->
+            <div class="lg:w-1/4">
+                <div class="bg-white rounded-xl shadow-md p-6 sticky top-32">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Noticias Recientes</h3>
+                    <div id="recentNews" class="space-y-4">
+                        <!-- Las noticias recientes se cargarán aquí -->
                     </div>
-                </div>
-            </div>
-        </div>
-        <!-- Fin Fila 2 -->
-
-        <!-- Fila 3 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <?php include("secciones/tecnologia.php"); ?>
-            <?php include("secciones/ciencia.php"); ?>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-blue-100 text-blue-800 mb-3">Tecnología</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $tecnologia["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $tecnologia["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $tecnologia["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $tecnologia["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-green-100 text-green-800 mb-3">Ciencia</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $ciencia["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $ciencia["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $ciencia["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $ciencia["fecha"] ?? "Hoy"; ?></span>
+                    
+                    <!-- Newsletter Subscription -->
+                    <div class="mt-8 p-4 bg-primary-50 rounded-lg">
+                        <h4 class="font-bold text-primary-700 mb-2">Suscríbete a nuestro boletín</h4>
+                        <p class="text-sm text-gray-600 mb-3">Recibe las noticias más importantes directamente en tu email.</p>
+                        <form class="space-y-2">
+                            <input type="email" placeholder="Tu email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                            <button type="submit" class="w-full bg-primary-600 text-white py-2 rounded-md hover:bg-primary-700 transition-colors">Suscribirse</button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- Fin Fila 3 -->
-
-        <!-- Fila 4 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <?php include("secciones/cultura.php"); ?>
-            <?php include("secciones/gente.php"); ?>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-gray-100 text-gray-800 mb-3">Cultura</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $cultura["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $cultura["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $cultura["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $cultura["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-yellow-100 text-yellow-800 mb-3">Gente</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $gente["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $gente["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $gente["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $gente["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Fin Fila 4 -->
-
-        <!-- Fila 5 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <?php include("secciones/deportes.php"); ?>
-            <?php include("secciones/television.php"); ?>
-            <?php include("secciones/video.php"); ?>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-blue-100 text-blue-800 mb-3">Deportes</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $deportes["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $deportes["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $deportes["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $deportes["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-green-100 text-green-800 mb-3">Televisión</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $television["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $television["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $television["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $television["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-purple-100 text-purple-800 mb-3">Video</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $video["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $video["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $video["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $video["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Fin Fila 5 -->
-
-        <!-- Fila 6 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <?php include("secciones/formacion.php"); ?>
-            <?php include("secciones/empleo.php"); ?>
-            <?php include("secciones/sociedad.php"); ?>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-blue-100 text-blue-800 mb-3">Formación</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $formacion["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $formacion["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $formacion["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $formacion["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-green-100 text-green-800 mb-3">Empleo</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $empleo["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $empleo["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $empleo["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $empleo["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-indigo-100 text-indigo-800 mb-3">Sociedad</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $sociedad["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $sociedad["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $sociedad["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $sociedad["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Fin Fila 6 -->
-
-        <!-- Fila 7 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <?php include("secciones/openstack.php"); ?>
-            <?php include("secciones/git.php"); ?>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-blue-100 text-blue-800 mb-3">OpenStack</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $openstack["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $openstack["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $openstack["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $openstack["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-green-100 text-green-800 mb-3">Git</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $git["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $git["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $git["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $git["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Fin Fila 7 -->
-
-        <!-- Fila 8 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <?php include("secciones/contenedores.php"); ?>
-            <?php include("secciones/openshift.php"); ?>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-gray-100 text-gray-800 mb-3">Contenedores</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $contenedores["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $contenedores["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $contenedores["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $contenedores["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="p-6">
-                    <span class="category-badge bg-yellow-100 text-yellow-800 mb-3">OpenShift</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2"><?php echo $openshift["titulo"]; ?></h3>
-                    <p class="text-gray-600 mb-4"><?php echo $openshift["resumen"]; ?></p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500"><?php echo $openshift["autor"]; ?></span>
-                        <span class="text-sm text-gray-500"><?php echo $openshift["fecha"] ?? "Hoy"; ?></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Fin Fila 8 -->
     </main>
 
     <!-- Footer -->
@@ -404,13 +275,167 @@
     </footer>
 
     <!-- Back to top button -->
-    <button id="backToTop" class="fixed bottom-4 right-4 bg-primary-600 text-white p-3 rounded-full shadow-lg hover:bg-primary-700 transition-colors hidden">
+    <button id="backToTop" class="fixed bottom-4 right-4 bg-primary-600 text-white p-3 rounded-full shadow-lg hover:bg-primary-700 transition-colors hidden z-10">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
     </button>
 
     <script>
+        // Variables globales
+        let allNews = <?php echo json_encode($todasLasNoticias); ?>;
+        let currentCategory = 'todas';
+
+        console.log('Total de noticias cargadas:', allNews.length);
+        console.log('Noticias:', allNews);
+
+        // Función para obtener el color de la categoría
+        function getCategoryColor(category) {
+            const colors = {
+                'ciencia': 'bg-green-100 text-green-800',
+                'tecnologia': 'bg-blue-100 text-blue-800',
+                'internacional': 'bg-red-100 text-red-800',
+                'nacional': 'bg-yellow-100 text-yellow-800',
+                'economica': 'bg-purple-100 text-purple-800',
+                'deportes': 'bg-orange-100 text-orange-800',
+                'cultura': 'bg-pink-100 text-pink-800',
+                'opinion': 'bg-indigo-100 text-indigo-800',
+                'gente': 'bg-teal-100 text-teal-800',
+                'formacion': 'bg-cyan-100 text-cyan-800',
+                'empleo': 'bg-lime-100 text-lime-800',
+                'sociedad': 'bg-amber-100 text-amber-800',
+                'contenedores': 'bg-gray-100 text-gray-800',
+                'git': 'bg-gray-100 text-gray-800',
+                'openstack': 'bg-gray-100 text-gray-800',
+                'openshift': 'bg-gray-100 text-gray-800',
+                'television': 'bg-purple-100 text-purple-800',
+                'video': 'bg-red-100 text-red-800',
+                'portada': 'bg-primary-100 text-primary-800'
+            };
+            return colors[category] || 'bg-gray-100 text-gray-800';
+        }
+
+        // Función para mostrar noticias según la categoría seleccionada
+        function displayNews() {
+            const container = document.getElementById('newsContainer');
+            const loadingState = document.getElementById('loadingState');
+            const emptyState = document.getElementById('emptyState');
+            
+            // Ocultar estados
+            loadingState.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            
+            // Filtrar noticias por categoría
+            let filteredNews = allNews;
+            if (currentCategory !== 'todas') {
+                filteredNews = allNews.filter(news => news.section === currentCategory);
+            }
+            
+            console.log(`Mostrando ${filteredNews.length} noticias para categoría: ${currentCategory}`);
+            
+            // Generar HTML para las noticias
+            if (filteredNews.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                container.innerHTML = filteredNews.map(news => `
+                    <div class="news-card bg-white rounded-xl shadow-md overflow-hidden">
+                        <img src="${news.imagen}" alt="${news.titulo}" class="w-full h-48 object-cover" onerror="this.src='https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=500&h=300&fit=crop'">
+                        <div class="p-6">
+                            <span class="category-badge ${getCategoryColor(news.section)} mb-3">${news.categoria}</span>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">${news.titulo}</h3>
+                            <p class="text-gray-600 mb-4">${news.resumen}</p>
+                            <div class="flex justify-between items-center text-sm text-gray-500">
+                                <span>${news.autor}</span>
+                                <span>${news.fecha}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Función para mostrar noticias recientes en el sidebar
+        function displayRecentNews() {
+            const recentContainer = document.getElementById('recentNews');
+            const recentNews = allNews.slice(0, 5); // Mostrar las 5 más recientes
+            
+            if (recentNews.length === 0) {
+                recentContainer.innerHTML = '<p class="text-gray-500 text-sm">No hay noticias recientes.</p>';
+            } else {
+                recentContainer.innerHTML = recentNews.map(news => `
+                    <div class="border-b border-gray-200 pb-4 last:border-0 last:pb-0">
+                        <span class="category-badge ${getCategoryColor(news.section)} text-xs mb-1">${news.categoria}</span>
+                        <h4 class="font-semibold text-gray-800 text-sm mb-1 line-clamp-2">${news.titulo}</h4>
+                        <p class="text-xs text-gray-600 mb-2 line-clamp-2">${news.resumen}</p>
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>${news.autor}</span>
+                            <span>${news.fecha}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Función para cambiar de categoría
+        function changeCategory(category) {
+            currentCategory = category;
+            
+            // Actualizar botones activos
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if (btn.dataset.category === category) {
+                    btn.classList.remove('bg-gray-200', 'text-gray-700');
+                    btn.classList.add('bg-primary-500', 'text-white');
+                } else {
+                    btn.classList.remove('bg-primary-500', 'text-white');
+                    btn.classList.add('bg-gray-200', 'text-gray-700');
+                }
+            });
+            
+            // Mostrar loading state
+            document.getElementById('loadingState').classList.remove('hidden');
+            
+            // Mostrar noticias después de un pequeño delay para mejor UX
+            setTimeout(displayNews, 300);
+        }
+
+        // Función para el carousel de la portada
+        function startCarousel() {
+            const slides = document.querySelectorAll('.hero-slide');
+            const indicators = document.querySelectorAll('.hero-indicator');
+            
+            if (slides.length <= 1) return; // No necesita carrusel si solo hay una slide
+            
+            let currentSlide = 0;
+            
+            function showSlide(index) {
+                slides.forEach(slide => slide.classList.remove('active'));
+                indicators.forEach(indicator => indicator.classList.remove('opacity-100'));
+                
+                slides[index].classList.add('active');
+                indicators[index].classList.add('opacity-100');
+                currentSlide = index;
+            }
+            
+            function nextSlide() {
+                const nextIndex = (currentSlide + 1) % slides.length;
+                showSlide(nextIndex);
+            }
+            
+            // Configurar intervalo para cambio automático
+            const slideInterval = setInterval(nextSlide, 5000);
+            
+            // Configurar eventos para los indicadores
+            indicators.forEach((indicator, index) => {
+                indicator.addEventListener('click', () => {
+                    clearInterval(slideInterval);
+                    showSlide(index);
+                    // Reiniciar el intervalo
+                    setInterval(nextSlide, 5000);
+                });
+            });
+        }
+
         // Back to top button functionality
         const backToTopButton = document.getElementById('backToTop');
         
@@ -427,6 +452,25 @@
                 top: 0,
                 behavior: 'smooth'
             });
+        });
+
+        // Inicialización cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado, inicializando...');
+            
+            // Iniciar carousel
+            startCarousel();
+            
+            // Configurar eventos para los botones de categoría
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    changeCategory(btn.dataset.category);
+                });
+            });
+            
+            // Mostrar categoría "Todas" por defecto
+            changeCategory('todas');
+            displayRecentNews();
         });
     </script>
 </body>
