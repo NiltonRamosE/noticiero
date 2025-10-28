@@ -8,7 +8,7 @@
     <meta name="author" content="">
     <link rel="icon" href="https://getbootstrap.com/favicon.ico">
 
-    <title>NOTICIAS SON NOTICIAS 2025</title>
+    <title>NOTICIAS: NILTON RAMOS ENCARNACION</title>
 
     <!-- Bootstrap core CSS -->
     <link href="https://getbootstrap.com/docs/4.1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -24,7 +24,7 @@
       <header class="blog-header py-3">
         <div class="row flex-nowrap justify-content-between align-items-center">
           <div class="col-12 text-center">
-            <a class="blog-header-logo text-dark" href="#">Diario STIC</a>
+            <a class="blog-header-logo text-dark" href="#">NILTON RAMOS ENCARNACION</a>
           </div>
         </div>
       </header>
